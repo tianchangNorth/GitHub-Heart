@@ -41,14 +41,20 @@ const useUserStore = defineStore('user', () => {
 
   // Get user's information
   const fetchInfo = async () => {
-    const { success, data } = await $fetch('/user', { method: 'get' });
-    if (success) {
+    const response = await $fetch('/user', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+
+    if (response.success && response.data) {
       setInfo({
-        ...data,
-        total_repos: data.public_repos + data.owned_private_repos
+        ...response.data,
+        total_repos: (response.data.public_repos || 0) + (response.data.owned_private_repos || 0)
       })
     }
-    return { success, data }
+    return { success: response.success, data: response.data }
   }
 
   return { user, setInfo, resetInfo, fetchInfo };

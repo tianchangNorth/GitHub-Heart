@@ -26,7 +26,7 @@ interface Repository {
   created_at?: string;    // 创建时间
   updated_at?: string;    // 更新时间
   language?: string;      // 主要编程语言
-  stargazersCount?: number;   // 星标数
+  stargazers_count?: number;   // 星标数
   forks_count?: number;   // 分叉数
 }
 
@@ -59,16 +59,22 @@ const fetchRepositories = async () => {
   error.value = null;
 
   try {
-    const { success, data } = await $fetch(`/users/${user.login}/repos`, { method: 'get' });
-    if (success && Array.isArray(data)) {
-      repositories.value = data;
+    const response = await $fetch(`/users/${user.login}/repos`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+
+    if (response.success && Array.isArray(response.data)) {
+      repositories.value = response.data;
     } else {
-      // 如果 API 失败，使用模拟数据
+      repositories.value = [];
     }
   } catch (err) {
     console.error('获取仓库失败:', err);
     error.value = '获取仓库数据失败';
-    // 使用模拟数据作为降级方案
+    repositories.value = [];
   } finally {
     loading.value = false;
   }
@@ -467,7 +473,7 @@ onMounted(() => {
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
                   </svg>
-                  <span>{{ repo.stargazersCount || 0 }}</span>
+                  <span>{{ repo.stargazers_count || 0 }}</span>
                 </div>
 
                 <!-- 分叉数 -->

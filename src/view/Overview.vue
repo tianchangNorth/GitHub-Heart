@@ -23,7 +23,7 @@ import {
   Heart,
   AlertTriangle,
   FileText,
-  RefreshCw,
+
   UserPlus,
   Download,
   CircleDot,
@@ -31,26 +31,66 @@ import {
   X
 } from 'lucide-vue-next'
 
-// 定义活动数据接口
+// 定义 GitHub 活动数据接口
 interface Activity {
+  id: string;
   type: string;
   actor: {
+    id: number;
     login: string;
-    id: string;
+    display_login: string;
+    gravatar_id: string;
+    url: string;
     avatar_url: string;
-    html_url: string;
   };
   repo: {
     id: number;
     name: string;
-    path: string;
-    web_url: string;
+    url: string;
   };
-  created_at: string;
   payload: {
-    title?: string;
-    id?: string;
-    iid?: string;
+    action?: string;
+    push_id?: number;
+    size?: number;
+    distinct_size?: number;
+    ref?: string;
+    head?: string;
+    before?: string;
+    commits?: Array<{
+      sha: string;
+      author: {
+        email: string;
+        name: string;
+      };
+      message: string;
+      distinct: boolean;
+      url: string;
+    }>;
+    ref_type?: string;
+    master_branch?: string;
+    description?: string;
+    pusher_type?: string;
+    issue?: {
+      id: number;
+      number: number;
+      title: string;
+      html_url: string;
+    };
+    pull_request?: {
+      id: number;
+      number: number;
+      title: string;
+      html_url: string;
+    };
+  };
+  public: boolean;
+  created_at: string;
+  org?: {
+    id: number;
+    login: string;
+    gravatar_id: string;
+    url: string;
+    avatar_url: string;
   };
 }
 
@@ -67,77 +107,86 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const showCloneDialog = ref(false);
 
-// 获取活动数据
+// 获取活动数据（使用 GitHub REST API）
 const fetchRecentActivity = async () => {
   loading.value = true;
   error.value = null;
 
   try {
-    const { success, data } = await $fetch(`/users/${user.login}/events`, { method: 'get' });
-    if (success && Array.isArray(data)) {
-      recentActivity.value = data;
+    const response = await $fetch(`/users/${user.login}/events`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+
+    if (response.success && Array.isArray(response.data)) {
+      recentActivity.value = response.data;
+    } else {
+      recentActivity.value = [];
     }
   } catch (error) {
     console.error('获取最近活动失败:', error);
+    recentActivity.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-// 获取活动类型的图标和颜色
+// 获取 GitHub 活动类型的图标和颜色
 const getActivityIcon = (type: string) => {
   const iconMap: Record<string, { component: any; color: string }> = {
-    push: {
+    PushEvent: {
       component: Upload,
       color: 'text-green-500'
     },
-    create: {
+    CreateEvent: {
       component: Plus,
       color: 'text-blue-500'
     },
-    delete: {
+    DeleteEvent: {
       component: Trash2,
       color: 'text-red-500'
     },
-    fork: {
+    ForkEvent: {
       component: GitFork,
       color: 'text-purple-500'
     },
-    issues: {
+    IssuesEvent: {
       component: AlertTriangle,
       color: 'text-orange-500'
     },
-    pull_request: {
+    PullRequestEvent: {
       component: GitFork,
       color: 'text-indigo-500'
     },
-    release: {
+    ReleaseEvent: {
       component: FileText,
       color: 'text-yellow-500'
     },
-    star: {
+    WatchEvent: {
       component: Heart,
       color: 'text-amber-500'
     },
-    mirror_sync: {
-      component: RefreshCw,
+    PublicEvent: {
+      component: Globe,
       color: 'text-blue-500'
     },
-    create_repo: {
-      component: Plus,
+    MemberEvent: {
+      component: UserPlus,
       color: 'text-green-500'
     },
-    create_issue: {
+    IssueCommentEvent: {
       component: CircleDot,
       color: 'text-orange-500'
     },
-    merge_created: {
+    PullRequestReviewEvent: {
       component: GitFork,
       color: 'text-purple-500'
     }
   };
 
-  return iconMap[type] || iconMap.push;
+  return iconMap[type] || iconMap.PushEvent;
 };
 
 // 格式化时间显示
@@ -162,43 +211,65 @@ const formatTimeAgo = (dateString: string): string => {
   }
 };
 
-// 获取活动描述文本
+// 获取 GitHub 活动描述文本
 const getActivityDescription = (activity: Activity): string => {
   const { type, repo, payload } = activity;
 
   switch (type) {
-    case 'push':
-      return `推送了代码到 ${repo.name}`;
-    case 'mirror_sync':
-      return `同步更新了 ${repo.name}`;
-    case 'create_repo':
-      return `新建了代码库 ${repo.name} `;
-    case 'delete':
-      return `在 ${repo.name} 中删除了内容`;
-    case 'fork':
+    case 'PushEvent':
+      const commitCount = payload.commits?.length || payload.size || 1;
+      return `推送了 ${commitCount} 个提交到 ${repo.name}`;
+    case 'CreateEvent':
+      if (payload.ref_type === 'repository') {
+        return `创建了仓库 ${repo.name}`;
+      } else if (payload.ref_type === 'branch') {
+        return `在 ${repo.name} 中创建了分支 ${payload.ref}`;
+      } else if (payload.ref_type === 'tag') {
+        return `在 ${repo.name} 中创建了标签 ${payload.ref}`;
+      }
+      return `在 ${repo.name} 中创建了 ${payload.ref_type}`;
+    case 'DeleteEvent':
+      return `在 ${repo.name} 中删除了 ${payload.ref_type} ${payload.ref}`;
+    case 'ForkEvent':
       return `Fork 了 ${repo.name}`;
-    case 'create_issue':
-      return `在 ${repo.name} 中创建了 Issue`;
-    case 'pull_request':
-      return `在 ${repo.name} 中提交了 Pull Request`;
-    case 'release':
-      return `为 ${repo.name} 发布了新版本`;
-    case 'star':
-      return `给 ${repo.name} 点了星标`;
-    case 'merge_created':
-      return `合并了 ${payload.title} 到 ${repo.name}`;
+    case 'IssuesEvent':
+      const issueAction = payload.action === 'opened' ? '创建了' :
+                         payload.action === 'closed' ? '关闭了' :
+                         payload.action === 'reopened' ? '重新打开了' : '操作了';
+      return `${issueAction} Issue #${payload.issue?.number} 在 ${repo.name}`;
+    case 'PullRequestEvent':
+      const prAction = payload.action === 'opened' ? '创建了' :
+                      payload.action === 'closed' ? '关闭了' :
+                      payload.action === 'reopened' ? '重新打开了' : '操作了';
+      return `${prAction} Pull Request #${payload.pull_request?.number} 在 ${repo.name}`;
+    case 'ReleaseEvent':
+      return `在 ${repo.name} 中${payload.action === 'published' ? '发布了' : '操作了'}新版本`;
+    case 'WatchEvent':
+      return `${payload.action === 'started' ? '关注了' : '取消关注了'} ${repo.name}`;
+    case 'PublicEvent':
+      return `将 ${repo.name} 设为公开`;
+    case 'MemberEvent':
+      return `在 ${repo.name} 中${payload.action === 'added' ? '添加了' : '操作了'}成员`;
+    case 'IssueCommentEvent':
+      return `在 ${repo.name} 的 Issue 中添加了评论`;
+    case 'PullRequestReviewEvent':
+      return `在 ${repo.name} 中审查了 Pull Request`;
     default:
-      return payload.title || `在 ${repo.name} 中进行了操作`;
+      return `在 ${repo.name} 中进行了 ${type} 操作`;
   }
 };
 
 // 处理点击跳转
 const handleUserClick = (userUrl: string) => {
-  invoke('open_url', { url: userUrl });
+  // GitHub API 返回的是 API URL，需要转换为网页 URL
+  const webUrl = userUrl.replace('api.github.com/users', 'github.com');
+  invoke('open_url', { url: webUrl });
 };
 
 const handleRepoClick = (repoUrl: string) => {
-  invoke('open_url', { url: repoUrl });
+  // GitHub API 返回的是 API URL，需要转换为网页 URL
+  const webUrl = repoUrl.replace('api.github.com/repos', 'github.com');
+  invoke('open_url', { url: webUrl });
 };
 
 const createRepo = () => {
@@ -347,7 +418,7 @@ onMounted(() => {
               v-for="activity in recentActivity.slice(0, 5)"
               :key="`${activity.type}-${activity.created_at}-${activity.repo.id}`"
               class="flex items-start space-x-3 group hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors cursor-pointer"
-              @click="handleRepoClick(activity.repo.web_url)"
+              @click="handleRepoClick(activity.repo.url)"
             >
               <!-- 用户头像 -->
               <Avatar size="sm" class="flex-shrink-0">
@@ -376,7 +447,7 @@ onMounted(() => {
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                       <button
-                        @click.stop="handleUserClick(activity.actor.html_url)"
+                        @click.stop="handleUserClick(activity.actor.url)"
                         class="hover:underline font-semibold"
                       >
                         {{ activity.actor.login }}
@@ -385,10 +456,10 @@ onMounted(() => {
                     </p>
                     <div class="flex items-center space-x-2 mt-1">
                       <button
-                        @click.stop="handleRepoClick(activity.repo.web_url)"
+                        @click.stop="handleRepoClick(activity.repo.url)"
                         class="text-xs text-muted-foreground hover:text-primary transition-colors hover:underline"
                       >
-                        {{ activity.repo.path }}
+                        {{ activity.repo.name }}
                       </button>
                       <span class="text-xs text-muted-foreground">•</span>
                       <span class="text-xs text-muted-foreground">

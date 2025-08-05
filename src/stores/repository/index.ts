@@ -111,14 +111,17 @@ export const useRepositoryStore = defineStore('repository', () => {
     error.value = null;
 
     try {
-      const { success, data } = await $fetch(`/repos/${owner}/${repo}`, {
-        method: 'get'
+      const response = await $fetch(`/repos/${owner}/${repo}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/vnd.github+json'
+        }
       });
 
-      if (success && data) {
-        currentRepository.value = data;
-        currentBranch.value = data.default_branch;
-        return { success: true, data };
+      if (response.success && response.data) {
+        currentRepository.value = response.data;
+        currentBranch.value = response.data.default_branch;
+        return { success: true, data: response.data };
       } else {
         throw new Error('获取仓库信息失败');
       }
@@ -155,13 +158,16 @@ export const useRepositoryStore = defineStore('repository', () => {
     branchesLoading.value = true;
 
     try {
-      const { success, data } = await $fetch(`/repos/${owner}/${repo}/branches`, {
-        method: 'get'
+      const response = await $fetch(`/repos/${owner}/${repo}/branches`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/vnd.github+json'
+        }
       });
 
-      if (success && Array.isArray(data)) {
-        branches.value = data;
-        return { success: true, data };
+      if (response.success && Array.isArray(response.data)) {
+        branches.value = response.data;
+        return { success: true, data: response.data };
       }
     } catch (err) {
       console.error('获取分支列表失败:', err);
@@ -188,29 +194,76 @@ export const useRepositoryStore = defineStore('repository', () => {
 
       // 如果还是没有 SHA，使用默认分支名称作为后备
       const treeRef = shaParam || currentBranch.value || defaultBranch.value;
-      const url = `/repos/${owner}/${repo}/trees/${treeRef}`;
 
-      const { success, data } = await $fetch(url, { method: 'get' });
+      // 添加 recursive=1 参数以获取完整的文件树，并处理可能的 404 错误
+      const url = `/repos/${owner}/${repo}/git/trees/${treeRef}?recursive=1`;
 
-      if (success && Array.isArray(data)) {
+      const response = await $fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/vnd.github+json'
+        }
+      });
+
+      if (response.success && response.data && Array.isArray(response.data.tree)) {
+        const treeData = response.data.tree;
+
+        // 只获取根目录的文件和文件夹
+        const rootItems = treeData.filter((item: any) => {
+          // 根目录项目不包含 '/' 或者只有一级路径
+          return !item.path.includes('/') || (path && item.path.startsWith(path + '/'));
+        });
+
         if (path === '') {
           // 根目录，直接设置
-          fileTree.value = data.map(item => ({
+          fileTree.value = rootItems.map((item: { type: string; path: string; }) => ({
+            ...item,
+            name: item.path.split('/').pop() || item.path, // 提取文件名
+            expanded: false,
+            loading: false,
+            children: item.type === 'tree' ? [] : undefined
+          }));
+        } else {
+          // 子目录，需要更新对应的节点
+          updateFileTreeNode(path, rootItems);
+        }
+
+        currentPath.value = path;
+        return { success: true, data: rootItems };
+      }
+    } catch (err) {
+      console.error('获取文件树失败:', err);
+
+      // 如果是 404 错误，可能是空仓库或者分支不存在，尝试使用 contents API
+      try {
+        const contentsUrl = `/repos/${owner}/${repo}/contents${path ? '/' + path : ''}`;
+        const contentsResponse = await $fetch(contentsUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/vnd.github+json'
+          }
+        });
+
+        if (contentsResponse.success && Array.isArray(contentsResponse.data)) {
+          const contentsData = contentsResponse.data.map((item: any) => ({
             ...item,
             expanded: false,
             loading: false,
             children: item.type === 'dir' ? [] : undefined
           }));
-        } else {
-          // 子目录，需要更新对应的节点
-          updateFileTreeNode(path, data);
-        }
 
-        currentPath.value = path;
-        return { success: true, data };
+          if (path === '') {
+            fileTree.value = contentsData;
+          } else {
+            updateFileTreeNode(path, contentsData);
+          }
+
+          currentPath.value = path;
+          return { success: true, data: contentsData };
+        }
+      } catch (contentsErr) {
+        console.error('使用 contents API 获取文件树也失败:', contentsErr);
       }
-    } catch (err) {
-      console.error('获取文件树失败:', err);
     } finally {
       fileTreeLoading.value = false;
     }
@@ -223,15 +276,16 @@ export const useRepositoryStore = defineStore('repository', () => {
   };
 
   // 更新文件树节点
-  const updateFileTreeNode = (path: string, children: FileTreeItem[]) => {
+  const updateFileTreeNode = (path: string, children: any[]) => {
     const updateNode = (items: FileTreeItem[], targetPath: string): boolean => {
       for (const item of items) {
-        if (item.path === targetPath) {
-          item.children = children.map(child => ({
+        if (item.path === targetPath || item.name === targetPath) {
+          item.children = children.map((child: any) => ({
             ...child,
+            name: child.name || (child.path ? child.path.split('/').pop() : ''),
             expanded: false,
             loading: false,
-            children: child.type === 'dir' ? [] : undefined
+            children: (child.type === 'tree' || child.type === 'dir') ? [] : undefined
           }));
           item.loading = false;
           item.expanded = true;
@@ -250,7 +304,7 @@ export const useRepositoryStore = defineStore('repository', () => {
 
   // 切换目录展开状态
   const toggleDirectory = async (item: FileTreeItem, owner: string, repo: string) => {
-    if (item.type !== 'dir') return;
+    if (item.type !== 'tree' && item.type !== 'dir') return;
 
     if (item.expanded) {
       // 收起目录
@@ -260,10 +314,34 @@ export const useRepositoryStore = defineStore('repository', () => {
       // 展开目录
       if (!item.children || item.children.length === 0) {
         item.loading = true;
-        // 获取当前分支的 commit SHA
-        const currentBranchInfo = branches.value.find(b => b.name === currentBranch.value);
-        const commitSha = currentBranchInfo?.commit.sha;
-        await fetchFileTree(owner, repo, commitSha, item.path);
+
+        try {
+          // 使用 contents API 获取目录内容
+          const contentsUrl = `/repos/${owner}/${repo}/contents/${item.path}`;
+          const response = await $fetch(contentsUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/vnd.github+json'
+            }
+          });
+
+          if (response.success && Array.isArray(response.data)) {
+            const contentsData = response.data.map((child: any) => ({
+              ...child,
+              name: child.name,
+              expanded: false,
+              loading: false,
+              children: child.type === 'dir' ? [] : undefined
+            }));
+
+            item.children = contentsData;
+            item.expanded = true;
+          }
+        } catch (err) {
+          console.error('获取目录内容失败:', err);
+        } finally {
+          item.loading = false;
+        }
       } else {
         item.expanded = true;
       }
@@ -282,18 +360,36 @@ export const useRepositoryStore = defineStore('repository', () => {
         refParam = currentBranchInfo?.commit.sha;
       }
 
-      // 构建 URL，如果有 SHA 则添加 ref 参数
-      let url = `/repos/${owner}/${repo}/contents/README.md`;
-      if (refParam) {
-        url += `?ref=${refParam}`;
+      // 尝试多种可能的 README 文件名
+      const readmeFiles = ['README.md', 'readme.md', 'README.MD', 'README', 'readme', 'README.txt'];
+
+      for (const filename of readmeFiles) {
+        try {
+          // 构建 URL，如果有 SHA 则添加 ref 参数
+          let url = `/repos/${owner}/${repo}/contents/${filename}`;
+          if (refParam) {
+            url += `?ref=${refParam}`;
+          }
+
+          const response = await $fetch(url, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/vnd.github+json'
+            }
+          });
+
+          if (response.success && response.data) {
+            readme.value = response.data;
+            return { success: true, data: response.data };
+          }
+        } catch (fileErr) {
+          // 继续尝试下一个文件名
+          continue;
+        }
       }
 
-      const { success, data } = await $fetch(url, { method: 'get' });
-
-      if (success && data) {
-        readme.value = data;
-        return { success: true, data };
-      }
+      // 如果所有文件名都尝试失败了
+      console.log('未找到 README 文件');
     } catch (err) {
       console.error('获取 README 失败:', err);
     } finally {

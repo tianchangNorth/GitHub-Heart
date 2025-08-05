@@ -177,7 +177,7 @@ async fn handle_response(response: Response) -> Result<ApiResponse<serde_json::V
                 message: Some("Request successful".to_string()),
                 data: Some(data),
             }),
-            Err(e) => {
+            Err(_e) => {
                 // 如果 JSON 解析失败，但状态码是成功的，可能是非 JSON 响应
                 // 将原始文本作为字符串返回
                 Ok(ApiResponse {

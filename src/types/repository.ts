@@ -21,7 +21,7 @@ export interface Repository {
   language?: string;
   languages_url?: string;
   size: number;
-  stars_count: number;
+  stargazers_count: number;
   watchers_count: number;
   forks_count: number;
   open_issues_count: number;
@@ -97,7 +97,7 @@ export interface Branch {
 export interface FileTreeItem {
   name: string;
   path: string;
-  type: 'file' | 'dir' | 'symlink';
+  type: 'file' | 'dir' | 'symlink' | 'tree' | 'blob';
   size?: number;
   sha: string;
   url: string;

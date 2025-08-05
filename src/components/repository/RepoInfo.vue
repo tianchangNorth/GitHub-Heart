@@ -100,7 +100,7 @@ const formatNumber = (num: number): string => {
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
             </svg>
-            <span>{{ formatNumber(0) }} 星标</span>
+            <span>{{ formatNumber(repository.stargazers_count || 0) }} 星标</span>
           </div>
 
           <!-- 分叉数 -->
@@ -108,7 +108,7 @@ const formatNumber = (num: number): string => {
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414L2.586 7l3.707-3.707a1 1 0 011.414 0z" clip-rule="evenodd"/>
             </svg>
-            <span>{{ formatNumber(repository.forksCount) }} 分叉</span>
+            <span>{{ formatNumber(repository.forks_count || 0) }} 分叉</span>
           </div>
 
           <!-- 观察者数 -->
@@ -117,7 +117,7 @@ const formatNumber = (num: number): string => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
             </svg>
-            <span>{{ formatNumber(0) }} 观察</span>
+            <span>{{ formatNumber(repository.watchers_count || 0) }} 观察</span>
           </div>
 
           <!-- 问题数 -->
@@ -125,7 +125,7 @@ const formatNumber = (num: number): string => {
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <span>{{ repository.open_issues_count }} 问题</span>
+            <span>{{ repository.open_issues_count || 0 }} 问题</span>
           </div>
 
           <!-- 主要语言 -->
@@ -137,8 +137,8 @@ const formatNumber = (num: number): string => {
 
         <!-- 时间信息 -->
         <div class="flex items-center flex-wrap gap-4 text-sm text-muted-foreground">
-          <span>创建于 {{ formatDate(repository.createdAt) }}</span>
-          <span>更新于 {{ formatDate(repository.updatedAt) }}</span>
+          <span>创建于 {{ formatDate(repository.created_at) }}</span>
+          <span>更新于 {{ formatDate(repository.updated_at) }}</span>
           <span v-if="repository.pushed_at">推送于 {{ formatDate(repository.pushed_at) }}</span>
         </div>
 

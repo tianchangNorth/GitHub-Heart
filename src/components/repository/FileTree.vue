@@ -72,7 +72,8 @@ const formatDate = (dateString?: string): string => {
 
 // 处理文件/目录点击
 const handleItemClick = (item: FileTreeItem) => {
-  if (item.type === 'dir') {
+  // GitHub API 使用 'tree' 表示目录（git trees API），'dir' 表示目录（contents API），'blob' 表示文件
+  if (item.type === 'dir' || item.type === 'tree') {
     // 目录：切换展开状态
     emit('directory-toggle', {
       directory: item,
@@ -104,7 +105,7 @@ const renderTreeItem = (item: FileTreeItem, level = 0) => {
   return {
     item,
     level,
-    isDirectory: item.type === 'dir',
+    isDirectory: item.type === 'dir' || item.type === 'tree',
     isExpanded: Boolean(item.expanded),
     isLoading: Boolean(item.loading),
     hasChildren: Boolean(item.children && Array.isArray(item.children) && item.children.length > 0)
@@ -125,7 +126,7 @@ const renderTree = (items: FileTreeItem[], level = 0): any[] => {
 
     result.push(renderTreeItem(item, level));
 
-    if (item.type === 'dir' && item.expanded && item.children && Array.isArray(item.children)) {
+    if ((item.type === 'dir' || item.type === 'tree') && item.expanded && item.children && Array.isArray(item.children)) {
       result.push(...renderTree(item.children, level + 1));
     }
   }
@@ -214,14 +215,14 @@ const treeItems = computed(() => renderTree(filteredItems.value));
           <div v-if="treeItem.isLoading" class="w-3 h-3 animate-spin border border-primary border-t-transparent rounded-full"></div>
 
           <!-- 文件/文件夹名称 -->
-          <span 
+          <span
             class="flex-1 text-sm truncate"
             :class="{
               'font-medium': treeItem.isDirectory,
               'text-foreground': true
             }"
           >
-            {{ treeItem.item.path }}
+            {{ treeItem.item.name || treeItem.item.path }}
           </span>
 
           <!-- 文件信息 -->
