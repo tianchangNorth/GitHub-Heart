@@ -72,7 +72,7 @@ async fn start_oauth_callback_server(app_handle: tauri::AppHandle) -> Result<Str
             ))
         });
 
-    let port = 8080;
+    let port = 8081;
     let handle = tokio::spawn(async move {
         warp::serve(callback).run(([127, 0, 0, 1], port)).await;
     });
@@ -216,6 +216,9 @@ pub fn run() {
             get_startup_args,
             http_client::http_get,
             http_client::http_post,
+            http_client::http_put,
+            http_client::http_patch,
+            http_client::http_delete,
             // Git 命令
             commands::git::clone_repository,
             commands::git::validate_repository_url,

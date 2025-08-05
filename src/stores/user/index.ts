@@ -41,9 +41,12 @@ const useUserStore = defineStore('user', () => {
 
   // Get user's information
   const fetchInfo = async () => {
-    const { success, data } = await $fetch('/user/info', { method: 'get' });
+    const { success, data } = await $fetch('/user', { method: 'get' });
     if (success) {
-      setInfo(data)
+      setInfo({
+        ...data,
+        total_repos: data.public_repos + data.owned_private_repos
+      })
     }
     return { success, data }
   }

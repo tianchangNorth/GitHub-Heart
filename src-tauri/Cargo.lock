@@ -322,40 +322,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
-name = "atomicheart"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "chrono",
- "dirs 5.0.1",
- "env_logger",
- "futures",
- "git2",
- "keyring",
- "lazy_static",
- "log",
- "open",
- "regex",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-deep-link",
- "tauri-plugin-dialog",
- "tauri-plugin-oauth",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "tauri-plugin-store",
- "thiserror 1.0.69",
- "tokio",
- "tokio-util",
- "url",
- "uuid",
- "warp",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1641,6 +1607,40 @@ dependencies = [
  "openssl-probe",
  "openssl-sys",
  "url",
+]
+
+[[package]]
+name = "githubheart"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dirs 5.0.1",
+ "env_logger",
+ "futures",
+ "git2",
+ "keyring",
+ "lazy_static",
+ "log",
+ "open",
+ "regex",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-deep-link",
+ "tauri-plugin-dialog",
+ "tauri-plugin-oauth",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-store",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+ "url",
+ "uuid",
+ "warp",
 ]
 
 [[package]]

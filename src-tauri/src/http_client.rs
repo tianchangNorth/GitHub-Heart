@@ -79,24 +79,114 @@ pub async fn http_post(
     handle_response(response).await
 }
 
+// 通用HTTP PUT请求
+#[command]
+pub async fn http_put(
+    url: String,
+    data: Option<serde_json::Value>,
+    headers: Option<HashMap<String, String>>,
+) -> Result<ApiResponse<serde_json::Value>, String> {
+    let mut request = HTTP_CLIENT.put(&url);
+
+    if let Some(headers_map) = headers {
+        for (key, value) in headers_map {
+            request = request.header(key, value);
+        }
+    }
+
+    if let Some(json_body) = data {
+        request = request.json(&json_body);
+    }
+
+    let response = request.send().await.map_err(|e| e.to_string())?;
+
+    handle_response(response).await
+}
+
+// 通用HTTP PATCH请求
+#[command]
+pub async fn http_patch(
+    url: String,
+    data: Option<serde_json::Value>,
+    headers: Option<HashMap<String, String>>,
+) -> Result<ApiResponse<serde_json::Value>, String> {
+    let mut request = HTTP_CLIENT.patch(&url);
+
+    if let Some(headers_map) = headers {
+        for (key, value) in headers_map {
+            request = request.header(key, value);
+        }
+    }
+
+    if let Some(json_body) = data {
+        request = request.json(&json_body);
+    }
+
+    let response = request.send().await.map_err(|e| e.to_string())?;
+
+    handle_response(response).await
+}
+
+// 通用HTTP DELETE请求
+#[command]
+pub async fn http_delete(
+    url: String,
+    data: Option<serde_json::Value>,
+    headers: Option<HashMap<String, String>>,
+) -> Result<ApiResponse<serde_json::Value>, String> {
+    let mut request = HTTP_CLIENT.delete(&url);
+
+    if let Some(headers_map) = headers {
+        for (key, value) in headers_map {
+            request = request.header(key, value);
+        }
+    }
+
+    if let Some(json_body) = data {
+        request = request.json(&json_body);
+    }
+
+    let response = request.send().await.map_err(|e| e.to_string())?;
+
+    handle_response(response).await
+}
+
 // 处理HTTP响应
 async fn handle_response(response: Response) -> Result<ApiResponse<serde_json::Value>, String> {
     let status = response.status();
 
     if status.is_success() {
-        match response.json::<serde_json::Value>().await {
+        // 获取响应文本
+        let response_text = response.text().await.map_err(|e| e.to_string())?;
+
+        // 如果响应为空或只包含空白字符，返回成功但无数据
+        if response_text.trim().is_empty() {
+            return Ok(ApiResponse {
+                success: true,
+                code: 0,
+                message: Some("Request successful".to_string()),
+                data: None,
+            });
+        }
+
+        // 尝试解析 JSON
+        match serde_json::from_str::<serde_json::Value>(&response_text) {
             Ok(data) => Ok(ApiResponse {
                 success: true,
                 code: 0,
                 message: Some("Request successful".to_string()),
                 data: Some(data),
             }),
-            Err(e) => Ok(ApiResponse {
-                success: false,
-                code: 1001,
-                message: Some(format!("Failed to parse response: {}", e)),
-                data: None,
-            }),
+            Err(e) => {
+                // 如果 JSON 解析失败，但状态码是成功的，可能是非 JSON 响应
+                // 将原始文本作为字符串返回
+                Ok(ApiResponse {
+                    success: true,
+                    code: 0,
+                    message: Some("Request successful (non-JSON response)".to_string()),
+                    data: Some(serde_json::Value::String(response_text)),
+                })
+            }
         }
     } else {
         let error_text = response

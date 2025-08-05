@@ -12,7 +12,7 @@ export interface ApiResponse {
   data?: any;
 }
 
-type HttpMethod = 'get' | 'post' | 'GET' | 'POST';
+type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 interface HttpOptions {
   method?: HttpMethod;
@@ -26,7 +26,8 @@ const { warning } = useToast();
  */
 export async function $fetch(url: string, options: HttpOptions): Promise<ApiResponse> {
   const { method = 'get', data, headers = {} } = options;
-  const fullUrl = `${baseUrl}${url}`;
+  // 如果 url 已经是完整的 URL（包含协议），则直接使用，否则拼接 baseUrl
+  const fullUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `${baseUrl}${url}`;
 
   // 自动添加 token
   const token = getToken();
@@ -34,7 +35,31 @@ export async function $fetch(url: string, options: HttpOptions): Promise<ApiResp
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const invokeName = method.toLowerCase() === 'post' ? 'http_post' : 'http_get';
+  // 自动添加 Content-Type
+  if (!headers['Content-Type']) {
+    headers['User-Agent'] = 'GitHeart';
+  }
+
+  // 根据 HTTP 方法选择对应的 Tauri 命令
+  let invokeName: string;
+  const methodLower = method.toLowerCase();
+  switch (methodLower) {
+    case 'post':
+      invokeName = 'http_post';
+      break;
+    case 'put':
+      invokeName = 'http_put';
+      break;
+    case 'patch':
+      invokeName = 'http_patch';
+      break;
+    case 'delete':
+      invokeName = 'http_delete';
+      break;
+    default:
+      invokeName = 'http_get';
+      break;
+  }
 
   const response = await invoke<ApiResponse>(invokeName, {
     url: fullUrl,

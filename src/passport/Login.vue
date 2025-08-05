@@ -58,13 +58,14 @@ const handleCallback = async () => {
 
   loading.value = true
   try {
-    const response = await $fetch('/login/oauth/access_token ', {
+    const response = await $fetch('https://github.com/login/oauth/access_token ', {
       method: 'POST',
       data: {
         client_id: oauthConfig.clientId,
         client_secret: oauthConfig.clientSecret,
         code: authCode.value,
-      }
+      },
+      headers: { Accept: 'application/json' }
     })
 
     if (response.success && response.data.access_token) {
@@ -93,7 +94,13 @@ const startOAuth = async () => {
     return
   }
 
-  const authUrl = `https://atomgit.com/login/oauth/authorize?client_id=${oauthConfig.clientId}&redirect_uri=${encodeURIComponent(oauthConfig.redirectUri)}&state=${oauthConfig.state}`
+  const queryParams = new URLSearchParams({
+    client_id: oauthConfig.clientId,
+    redirect_uri: oauthConfig.redirectUri,
+    state: oauthConfig.state,
+    scope: 'repo admin:org notifications user'
+  })
+  const authUrl = `https://github.com/login/oauth/authorize?${queryParams}`
 
   try {
     await invoke('open_url', { url: authUrl })

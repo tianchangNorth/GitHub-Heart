@@ -1,8 +1,8 @@
 [package]
-name = "atomicheart"
+name = "githubheart"
 version = "1.0.0"
 description = "Atomic Heart - Modern Git Repository Management Application"
-authors = ["Atomic Heart Team"]
+authors = ["tianchang"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

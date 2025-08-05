@@ -14,43 +14,71 @@ import {
   type Notification
 } from '@/services/notificationService';
 
-// 从通知内容中提取通知类型
-const getNotificationType = (content: string): string => {
-  const lowerContent = content.toLowerCase();
-  if (lowerContent.includes('issue') || lowerContent.includes('问题')) {
+// 根据 GitHub API 的通知类型和原因获取通知类型
+const getNotificationType = (notification: Notification): string => {
+  const subjectType = notification.subject.type.toLowerCase();
+  const reason = notification.reason.toLowerCase();
+
+  if (subjectType === 'issue') {
     return 'issue';
-  } else if (lowerContent.includes('pull request') || lowerContent.includes('pr') || lowerContent.includes('合并请求')) {
+  } else if (subjectType === 'pullrequest') {
     return 'pr';
-  } else if (lowerContent.includes('mention') || lowerContent.includes('提及') || lowerContent.includes('@')) {
+  } else if (reason === 'mention' || reason === 'team_mention') {
     return 'mention';
-  } else if (lowerContent.includes('star') || lowerContent.includes('fork') || lowerContent.includes('watch')) {
+  } else if (reason === 'assign' || reason === 'review_requested') {
+    return 'assign';
+  } else if (reason === 'subscribed' || reason === 'author') {
     return 'activity';
   }
   return 'system';
 };
 
-const getNotificationBadgeVariant = (content: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
-  const type = getNotificationType(content);
+const getNotificationBadgeVariant = (notification: Notification): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  const type = getNotificationType(notification);
   const variants = {
     issue: 'destructive' as const,
     pr: 'default' as const,
     mention: 'secondary' as const,
+    assign: 'default' as const,
     activity: 'outline' as const,
     system: 'outline' as const
   };
   return variants[type as keyof typeof variants] || variants.system;
 };
 
-const getNotificationTypeText = (content: string) => {
-  const type = getNotificationType(content);
+const getNotificationTypeText = (notification: Notification) => {
+  const type = getNotificationType(notification);
   const texts = {
     issue: 'Issue',
     pr: 'Pull Request',
     mention: '提及',
+    assign: '分配',
     activity: '活动',
     system: '系统通知'
   };
   return texts[type as keyof typeof texts] || '通知';
+};
+
+// 根据通知原因获取描述文本
+const getReasonText = (reason: string): string => {
+  const reasonTexts: Record<string, string> = {
+    'approval_requested': '请求审批',
+    'assign': '被分配',
+    'author': '你创建的',
+    'comment': '新评论',
+    'ci_activity': 'CI 活动',
+    'invitation': '邀请',
+    'manual': '手动订阅',
+    'member_feature_requested': '功能请求',
+    'mention': '提及了你',
+    'review_requested': '请求审查',
+    'security_alert': '安全警告',
+    'security_advisory_credit': '安全建议',
+    'state_change': '状态变更',
+    'subscribed': '订阅的仓库',
+    'team_mention': '团队提及'
+  };
+  return reasonTexts[reason] || reason;
 };
 
 const formatTime = (dateString: string) => {
@@ -75,14 +103,13 @@ const formatTime = (dateString: string) => {
   }
 };
 
-// 安全渲染HTML内容
-const sanitizeHtml = (html: string): string => {
-  // 简单的HTML清理，移除潜在危险的标签和属性
-  return html
-    .replace(/<script[^>]*>.*?<\/script>/gi, '')
-    .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
-    .replace(/on\w+="[^"]*"/gi, '')
-    .replace(/javascript:/gi, '');
+// 生成通知内容描述
+const getNotificationContent = (notification: Notification): string => {
+  const reasonText = getReasonText(notification.reason);
+  const repoName = notification.repository.name;
+  const subjectTitle = notification.subject.title;
+
+  return `在 ${repoName} 中，${reasonText}：${subjectTitle}`;
 };
 
 // fetchNotifications 现在在服务中
@@ -95,10 +122,10 @@ const handleNotificationClick = (notification: Notification) => {
   }
 
   // 跳转到通知对应的页面
-  if (notification.html_url) {
-    console.log('跳转到:', notification.html_url);
-    // 这里可以添加路由跳转逻辑
-    // router.push(notification.html_url);
+  if (notification.subject.url) {
+    console.log('跳转到:', notification.subject.url);
+    // 打开 GitHub 页面
+    openUrl(notification.repository.html_url);
   }
 };
 
@@ -181,25 +208,23 @@ const openUrl = async (url: string) => {
             @click="handleNotificationClick(notification)"
           >
             <div class="flex items-start space-x-3">
-              <!-- 发送者头像 -->
+              <!-- 仓库头像 -->
               <Avatar size="sm" class="flex-shrink-0">
                 <AvatarImage
-                  :src="notification.sender.avatar_url"
-                  :alt="notification.sender.login"
+                  :src="notification.repository.owner.avatar_url"
+                  :alt="notification.repository.owner.login"
                 />
                 <AvatarFallback class="text-xs">
-                  {{ notification.sender.login.charAt(0).toUpperCase() }}
+                  {{ notification.repository.owner.login.charAt(0).toUpperCase() }}
                 </AvatarFallback>
               </Avatar>
-
-              <!-- 通知类型图标 -->
 
               <!-- 通知内容 -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-1">
                     <span class="text-sm font-medium text-foreground">
-                      {{ notification.sender.login }}
+                      {{ notification.repository.full_name }}
                     </span>
                     <div v-if="notification.unread" class="w-2 h-2 bg-primary rounded-full"></div>
                   </div>
@@ -208,24 +233,23 @@ const openUrl = async (url: string) => {
                   </span>
                 </div>
 
-                <!-- 通知内容（安全渲染HTML） -->
-                <div
-                  class="text-sm text-foreground line-clamp-3 mb-2"
-                  v-html="sanitizeHtml(notification.content)"
-                ></div>
+                <!-- 通知内容 -->
+                <div class="text-sm text-foreground line-clamp-3 mb-2">
+                  {{ getNotificationContent(notification) }}
+                </div>
 
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
                     <Badge
-                      :variant="getNotificationBadgeVariant(notification.content)"
+                      :variant="getNotificationBadgeVariant(notification)"
                       class="text-xs"
                     >
-                      {{ getNotificationTypeText(notification.content) }}
+                      {{ getNotificationTypeText(notification) }}
                     </Badge>
                     <div
-                      v-if="notification.html_url"
+                      v-if="notification.repository.html_url"
                       class="text-xs text-muted-foreground hover:text-primary transition-colors"
-                      @click.stop="openUrl(notification.html_url)"
+                      @click.stop="openUrl(notification.repository.html_url)"
                     >
                       查看详情
                   </div>
