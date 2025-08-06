@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -90,7 +89,7 @@ const assigneesLoading = ref(false);
 // 获取 issue 详情
 const fetchIssue = async () => {
   if (!owner.value || !repo.value || !issueNumber.value) return;
-  
+
   loading.value = true;
   error.value = null;
 
@@ -115,7 +114,7 @@ const fetchIssue = async () => {
 // 获取评论列表
 const fetchComments = async () => {
   if (!owner.value || !repo.value || !issueNumber.value) return;
-  
+
   commentsLoading.value = true;
 
   try {
@@ -139,7 +138,7 @@ const fetchComments = async () => {
 // 提交新评论
 const submitComment = async () => {
   if (!newComment.value.trim() || !owner.value || !repo.value || !issueNumber.value) return;
-  
+
   commentSubmitting.value = true;
 
   try {
@@ -173,9 +172,9 @@ const submitComment = async () => {
 // 切换 issue 状态
 const toggleIssueState = async () => {
   if (!issue.value || !owner.value || !repo.value || !issueNumber.value) return;
-  
+
   const newState = issue.value.state === 'open' ? 'closed' : 'open';
-  
+
   try {
     const response = await $fetch(`/repos/${owner.value}/${repo.value}/issues/${issueNumber.value}`, {
       method: 'patch',
@@ -204,7 +203,7 @@ const toggleIssueState = async () => {
 // 获取可分配的用户列表
 const fetchAssignees = async () => {
   if (!owner.value || !repo.value) return;
-  
+
   assigneesLoading.value = true;
 
   try {
@@ -771,7 +770,7 @@ watch([owner, repo, issueNumber], async () => {
                   <!-- 悬浮时显示的操作提示 -->
                   <div class="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div class="text-xs text-muted-foreground">
-                      {{ issue?.assignees?.some(assignee => assignee.id === user.id) ? '点击取消分配' : '点击分配' }}
+                      {{issue?.assignees?.some(assignee => assignee.id === user.id) ? '点击取消分配' : '点击分配'}}
                     </div>
                   </div>
                 </div>
@@ -847,7 +846,8 @@ watch([owner, repo, issueNumber], async () => {
   color: hsl(var(--muted-foreground));
 }
 
-.prose ul, .prose ol {
+.prose ul,
+.prose ol {
   margin: 1rem 0;
   padding-left: 1.5rem;
 }
@@ -856,7 +856,12 @@ watch([owner, repo, issueNumber], async () => {
   margin: 0.5rem 0;
 }
 
-.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
   color: hsl(var(--foreground));
   font-weight: 600;
   margin-top: 1.5rem;
@@ -897,9 +902,12 @@ watch([owner, repo, issueNumber], async () => {
 
 /* 渐变动画 */
 @keyframes gradient-shift {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
@@ -910,6 +918,7 @@ watch([owner, repo, issueNumber], async () => {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -931,7 +940,7 @@ watch([owner, repo, issueNumber], async () => {
   .responsive-padding {
     padding: 1rem;
   }
-  
+
   .responsive-gap {
     gap: 0.75rem;
   }
@@ -939,13 +948,13 @@ watch([owner, repo, issueNumber], async () => {
 
 /* 卡片阴影层次 */
 .card-shadow {
-  box-shadow: 
+  box-shadow:
     0 1px 3px 0 rgb(0 0 0 / 0.1),
     0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
 .card-shadow:hover {
-  box-shadow: 
+  box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.1),
     0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
