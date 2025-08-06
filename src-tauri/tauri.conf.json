@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Atomic Heart",
+  "productName": "GitHub Heart",
   "version": "1.0.0",
   "identifier": "com.tauri-app.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Atomic Heart",
+        "title": "GitHub Heart",
         "width": 1440,
         "height": 900,
         "devtools": true
@@ -45,7 +45,7 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Modern Git Repository Management Application",
-    "longDescription": "Atomic Heart is a modern Git repository management application built with Tauri and Vue.js",
+    "longDescription": "Github Heart is a modern Git repository management application built with Tauri and Vue.js",
     "windows": {
       "nsis": {
         "installMode": "currentUser",

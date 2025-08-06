@@ -1,7 +1,7 @@
 [package]
 name = "githubheart"
 version = "1.0.0"
-description = "Atomic Heart - Modern Git Repository Management Application"
+description = "GitHub Heart - Modern Git Repository Management Application"
 authors = ["tianchang"]
 edition = "2021"
 

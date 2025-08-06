@@ -73,7 +73,6 @@ const fetchRepositories = async () => {
     }
   } catch (err) {
     console.error('获取仓库失败:', err);
-    error.value = '获取仓库数据失败';
     repositories.value = [];
   } finally {
     loading.value = false;
@@ -111,7 +110,7 @@ const filteredRepositories = computed(() => {
       case 'created':
         return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
       case 'stars':
-        return (b.stargazersCount || 0) - (a.stargazersCount || 0);
+        return (b.stargazers_count || 0) - (a.stargazers_count || 0);
       default:
         return 0;
     }

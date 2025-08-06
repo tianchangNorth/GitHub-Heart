@@ -144,11 +144,11 @@ onUnmounted(() => {
           enter-to-class="transform translate-y-0 opacity-100"
         >
           <div class="text-center mb-8">
-            <div class="inline-flex items-center bg-gray-50 dark:bg-gray-800 justify-center w-16 h-16 p-2 rounded-2xl shadow-lg mb-4 animate-bounce-gentle">
+            <div class="inline-flex items-center bg-gray-50 justify-center w-16 h-16 p-2 rounded-2xl shadow-lg mb-4 animate-bounce-gentle">
               <img src="@/assets/icon.png">
             </div>
             <h1 class="text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-primary to-blue-600 bg-clip-text">
-              AtomGit
+              GitHub
             </h1>
             <p class="text-muted-foreground">现代化的代码托管平台</p>
           </div>
@@ -165,7 +165,7 @@ onUnmounted(() => {
             <CardHeader class="text-center pb-2">
               <CardTitle class="text-2xl font-bold text-foreground">欢迎回来</CardTitle>
               <CardDescription class="text-muted-foreground mt-2">
-                使用您的 AtomGit 账号登录以继续
+                使用您的 GitHub 账号登录以继续
               </CardDescription>
             </CardHeader>
 
@@ -194,7 +194,7 @@ onUnmounted(() => {
                   </Transition>
 
                   <span class="transition-all duration-300">
-                    {{ loading ? '正在登录...' : '使用 AtomGit 登录' }}
+                    {{ loading ? '正在登录...' : '使用 GitHub 登录' }}
                   </span>
                 </div>
 
@@ -243,7 +243,7 @@ onUnmounted(() => {
               <a href="#" class="text-primary hover:underline transition-colors">隐私政策</a>
             </p>
             <p class="text-xs text-muted-foreground">
-              © 2024 AtomGit. 保留所有权利。
+              © 2024 GitHub. 保留所有权利。
             </p>
           </div>
         </Transition>

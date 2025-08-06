@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// computed 不再需要，因为使用服务中的
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,8 +10,10 @@ import {
   markAsRead,
   markAllAsRead,
   dismissNotification,
+  initializeNotifications,
   type Notification
 } from '@/services/notificationService';
+import { onMounted } from 'vue';
 
 // 根据 GitHub API 的通知类型和原因获取通知类型
 const getNotificationType = (notification: Notification): string => {
@@ -137,6 +138,9 @@ const openUrl = async (url: string) => {
   }
 };
 
+onMounted(()=>{
+  initializeNotifications()
+})
 </script>
 
 <template>
