@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,7 @@ interface Issue {
 }
 
 // 状态管理
+const router = useRouter();
 const activeTab = ref('assigned'); // 'assigned' | 'created'
 const activeFilter = ref('all'); // 'all' | 'open' | 'closed'
 const searchQuery = ref('');
@@ -194,8 +196,20 @@ const getRepositoryName = (repositoryUrl: string): string => {
 
 // 处理操作
 const handleIssueClick = (issue: Issue) => {
-  // 这里可以添加路由跳转逻辑
-  invoke('open_url', { url: issue.html_url });
+  // 从 repository_url 提取 owner 和 repo 名称
+  const repoUrlParts = issue.repository_url.split('/');
+  const owner = repoUrlParts[repoUrlParts.length - 2];
+  const repo = repoUrlParts[repoUrlParts.length - 1];
+  
+  // 导航到 issue 详情页
+  router.push({
+    name: 'IssueDetail',
+    params: {
+      owner,
+      repo,
+      number: issue.number.toString()
+    }
+  });
 };
 
 const handleCreateIssue = () => {
@@ -466,6 +480,14 @@ onMounted(() => {
                     @click.stop="handleIssueClick(issue)"
                     title="查看详情"
                   >
+                    详情
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    @click.stop="invoke('open_url', { url: issue.html_url })"
+                    title="在 GitHub 中查看"
+                  >
                     <ExternalLink class="w-4 h-4" />
                   </Button>
                 </div>
@@ -628,6 +650,14 @@ onMounted(() => {
                         size="sm"
                         @click.stop="handleIssueClick(issue)"
                         title="查看详情"
+                      >
+                        详情
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        @click.stop="invoke('open_url', { url: issue.html_url })"
+                        title="在 GitHub 中查看"
                       >
                         <ExternalLink class="w-4 h-4" />
                       </Button>

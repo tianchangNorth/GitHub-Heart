@@ -6,6 +6,7 @@ import Login from '@/passport/Login.vue'
 import Home from '@/view/Home.vue'
 import Overview from '@/view/Overview.vue'
 import Issues from '@/view/Issues.vue'
+import IssueDetail from '@/view/IssueDetail.vue'
 import Repositories from '@/view/Repositories.vue'
 import RepositoryDetail from '@/view/RepositoryDetail.vue'
 import LocalRepository from '@/view/LocalRepository.vue'
@@ -32,6 +33,12 @@ const routes = [
     path: '/repository/:owner/:repo',
     component: RepositoryDetail,
     name: 'RepositoryDetail',
+    props: true
+  },
+  {
+    path: '/repository/:owner/:repo/issues/:number',
+    component: IssueDetail,
+    name: 'IssueDetail',
     props: true
   },
   { path: '/login', component: Login },
